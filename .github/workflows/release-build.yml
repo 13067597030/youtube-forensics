@@ -1,0 +1,42 @@
+name: Release Build
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install and build
+        shell: pwsh
+        run: |
+          python -m pip install -e ".[dev,pack,browser]"
+          .\scripts\build_release.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: YouTubeForensics-win64
+          path: dist/YouTubeForensics-*.zip
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install and build
+        run: |
+          pip install -e ".[dev,pack,browser]"
+          chmod +x scripts/build_release.sh
+          ./scripts/build_release.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: YouTubeForensics-macos
+          path: dist/YouTubeForensics-*.zip

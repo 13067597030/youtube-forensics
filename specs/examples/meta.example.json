@@ -1,0 +1,36 @@
+{
+  "format_version": "1.0.0",
+  "tool_name": "YouTubeForensics",
+  "tool_version": "0.1.0",
+  "extraction_type": "network_online_extraction",
+  "run_id": "20260716T053000Z_a1b2c3d4",
+  "started_at": "2026-07-16T13:30:00+08:00",
+  "finished_at": "2026-07-16T14:10:00+08:00",
+  "status": "completed",
+  "platform": "windows",
+  "account_email": "user@example.com",
+  "cookie_source": "chrome_auto",
+  "time_sync": {
+    "system_time": "2026-07-16T13:29:58+08:00",
+    "reference_time": "2026-07-16T13:30:00+08:00",
+    "offset_seconds": -2.0,
+    "source": "ntp"
+  },
+  "counts": {
+    "channels_total": 2,
+    "channels_done": 2,
+    "videos_total": 100,
+    "videos_done": 100,
+    "analytics_total": 100,
+    "analytics_done": 80,
+    "analytics_unavailable": 20
+  },
+  "evidence_files": [
+    "Account_Mapping.csv",
+    "Video_List.csv",
+    "Video_Analytics.csv",
+    "run.log",
+    "hashes.sha256"
+  ],
+  "notes": ""
+}

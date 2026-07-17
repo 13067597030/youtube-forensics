@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>YouTubeForensics Dashboard</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --fg: #e7ecf1;
+      --muted: #8b9aab;
+      --accent: #3d9cf0;
+      --ok: #3ecf8e;
+      --warn: #f0b429;
+      --err: #f07178;
+      --line: #243040;
+      --panel: rgba(255,255,255,0.03);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "PingFang SC", sans-serif;
+      background: radial-gradient(1200px 600px at 10% -10%, #1a2740, var(--bg));
+      color: var(--fg);
+      min-height: 100vh;
+    }
+    header {
+      padding: 28px 24px 0;
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+    h1 { font-size: 1.6rem; margin: 0 0 6px; letter-spacing: 0.02em; }
+    .sub { color: var(--muted); margin: 0 0 20px; font-size: 0.95rem; }
+    main {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 24px 40px;
+      display: grid;
+      gap: 16px;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: minmax(360px, 2fr) minmax(0, 3fr);
+      gap: 16px;
+      align-items: start;
+    }
+    @media (max-width: 960px) {
+      .grid-2 { grid-template-columns: 1fr; }
+      .panel-log { min-width: 0; }
+    }
+    .panel-log {
+      min-width: 360px;
+    }
+    .panel-preview {
+      min-width: 0;
+      overflow: hidden;
+    }
+    #preview-content {
+      min-width: 0;
+    }
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 16px 18px;
+      background: var(--panel);
+    }
+    .panel h2 {
+      margin: 0 0 12px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .badge {
+      display: inline-block;
+      padding: 3px 12px;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+    .badge.running { background: rgba(61,156,240,0.18); color: var(--accent); }
+    .badge.completed { background: rgba(62,207,142,0.18); color: var(--ok); }
+    .badge.partial { background: rgba(240,180,41,0.18); color: var(--warn); }
+    .badge.failed { background: rgba(240,113,120,0.18); color: var(--err); }
+    .badge.starting { background: rgba(139,154,171,0.18); color: var(--muted); }
+
+    .meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px 24px;
+      margin-bottom: 14px;
+      font-size: 0.9rem;
+    }
+    .meta-row span { color: var(--muted); }
+    .meta-row strong { color: var(--fg); font-weight: 500; }
+
+    .progress-bar {
+      height: 8px;
+      background: var(--line);
+      border-radius: 999px;
+      overflow: hidden;
+      margin: 10px 0 14px;
+    }
+    .progress-bar > div {
+      height: 100%;
+      background: linear-gradient(90deg, #2a7fd4, var(--accent));
+      width: 0%;
+      transition: width 0.4s ease;
+    }
+
+    .stages {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .stage {
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+    .stage.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(61,156,240,0.08);
+    }
+    .stage.done {
+      border-color: rgba(62,207,142,0.4);
+      color: var(--ok);
+    }
+
+    .counts {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .count-card {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+      text-align: center;
+    }
+    .count-card .n {
+      font-size: 1.4rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+    .count-card .l { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+
+    .log-box {
+      height: 360px;
+      overflow: auto;
+      font-family: "Cascadia Code", "Consolas", monospace;
+      font-size: 0.78rem;
+      line-height: 1.45;
+      background: rgba(0,0,0,0.25);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 12px;
+      white-space: pre-wrap;
+      overflow-wrap: break-word;
+      word-break: normal;
+    }
+    .log-line { margin: 0; }
+    .log-line.warn { color: var(--warn); }
+    .log-line.error { color: var(--err); }
+
+    .tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .tab {
+      padding: 6px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+    .tab.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(61,156,240,0.1);
+    }
+
+    .table-wrap {
+      overflow: auto;
+      max-height: 360px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      max-width: 100%;
+    }
+    table {
+      width: max-content;
+      min-width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+    }
+    th, td {
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      position: sticky;
+      top: 0;
+      background: #151c26;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    td.truncate {
+      max-width: 220px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .hash-list { list-style: none; padding: 0; margin: 0; }
+    .hash-list li {
+      padding: 8px 0;
+      border-bottom: 1px solid var(--line);
+      font-size: 0.82rem;
+    }
+    .hash-list code {
+      display: block;
+      color: var(--muted);
+      font-size: 0.75rem;
+      word-break: break-all;
+      margin-top: 4px;
+    }
+    .empty { color: var(--muted); font-size: 0.88rem; padding: 20px 0; text-align: center; }
+    .detail { color: var(--muted); font-size: 0.88rem; margin-top: 6px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>YouTubeForensics</h1>
+    <p class="sub">网络在线提取 · 本地 Dashboard · 进度 / 日志 / 结果预览</p>
+  </header>
+
+  <main>
+    <section class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+        <div>
+          <span class="badge starting" id="status-badge">—</span>
+          <div class="detail" id="status-detail">等待状态…</div>
+        </div>
+        <div class="meta-row">
+          <div><span>Run ID </span><strong id="run-id">—</strong></div>
+          <div><span>账号 </span><strong id="account-email">—</strong></div>
+          <div><span>阶段 </span><strong id="requested-stage">—</strong></div>
+        </div>
+      </div>
+      <div class="progress-bar"><div id="progress-fill"></div></div>
+      <div class="stages" id="stages"></div>
+      <div class="counts">
+        <div class="count-card"><div class="n" id="c-channels">0</div><div class="l">频道</div></div>
+        <div class="count-card"><div class="n" id="c-videos">0</div><div class="l">视频</div></div>
+        <div class="count-card"><div class="n" id="c-analytics">0</div><div class="l">统计行</div></div>
+      </div>
+    </section>
+
+    <div class="grid-2">
+      <section class="panel panel-log">
+        <h2>运行日志</h2>
+        <div class="log-box" id="log-box"></div>
+      </section>
+
+      <section class="panel panel-preview">
+        <h2>结果预览</h2>
+        <div class="tabs" id="preview-tabs">
+          <button class="tab active" data-tab="account_mapping">频道</button>
+          <button class="tab" data-tab="video_list">视频</button>
+          <button class="tab" data-tab="video_analytics">统计</button>
+          <button class="tab" data-tab="integrity">校验</button>
+        </div>
+        <div id="preview-content"></div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    let logOffset = 0;
+    let activeTab = "account_mapping";
+    let userScrolledLog = false;
+
+    const logBox = document.getElementById("log-box");
+    logBox.addEventListener("scroll", () => {
+      userScrolledLog = logBox.scrollTop + logBox.clientHeight < logBox.scrollHeight - 24;
+    });
+
+    document.getElementById("preview-tabs").addEventListener("click", (e) => {
+      const btn = e.target.closest(".tab");
+      if (!btn) return;
+      document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+      btn.classList.add("active");
+      activeTab = btn.dataset.tab;
+      loadPreview();
+    });
+
+    function statusClass(s) {
+      if (s === "completed") return "completed";
+      if (s === "partial") return "partial";
+      if (s === "failed") return "failed";
+      if (s === "running") return "running";
+      return "starting";
+    }
+
+    function renderStages(stages) {
+      const el = document.getElementById("stages");
+      if (!stages || !stages.length) {
+        el.innerHTML = "";
+        return;
+      }
+      el.innerHTML = stages.map(s =>
+        `<div class="stage ${s.state}">${s.label}</div>`
+      ).join("");
+    }
+
+    async function refreshStatus() {
+      try {
+        const res = await fetch("/api/status");
+        const d = await res.json();
+        const badge = document.getElementById("status-badge");
+        badge.textContent = d.status || "—";
+        badge.className = "badge " + statusClass(d.status);
+        let detailText = d.detail || d.current_label || d.message || "—";
+        const ap = d.analytics_progress || {};
+        if (ap.page_total > 0 && ap.page > 0) {
+          const ch = ap.channel ? ap.channel + " · " : "";
+          const src = ap.source || "API";
+          detailText = ch + src + " 第 " + ap.page + "/" + ap.page_total + " 页";
+        }
+        document.getElementById("status-detail").textContent = detailText;
+        document.getElementById("run-id").textContent = d.run_id || "—";
+        document.getElementById("account-email").textContent = d.account_email || "—";
+        document.getElementById("requested-stage").textContent = d.requested_stage || "—";
+        document.getElementById("progress-fill").style.width = (d.progress_percent || 0) + "%";
+        renderStages(d.stages);
+        const c = d.counts || {};
+        document.getElementById("c-channels").textContent =
+          (c.channels_done || 0) + (c.channels_total ? " / " + c.channels_total : "");
+        document.getElementById("c-videos").textContent =
+          (c.videos_done || 0) + (c.videos_total ? " / " + c.videos_total : "");
+        document.getElementById("c-analytics").textContent =
+          (c.analytics_total || 0) +
+          (c.analytics_done ? " (已采:" + c.analytics_done + ")" : "") +
+          (c.analytics_partial ? " partial:" + c.analytics_partial : "");
+      } catch (e) {
+        document.getElementById("status-detail").textContent = "无法连接状态接口";
+      }
+    }
+
+    async function refreshLogs() {
+      try {
+        const res = await fetch("/api/logs?offset=" + logOffset);
+        const d = await res.json();
+        if (d.lines && d.lines.length) {
+          const frag = document.createDocumentFragment();
+          d.lines.forEach(line => {
+            const p = document.createElement("p");
+            p.className = "log-line";
+            if (/\| WARNING \|/.test(line)) p.classList.add("warn");
+            if (/\| ERROR \|/.test(line)) p.classList.add("error");
+            p.textContent = line;
+            frag.appendChild(p);
+          });
+          logBox.appendChild(frag);
+          while (logBox.childElementCount > 500) {
+            logBox.removeChild(logBox.firstChild);
+          }
+          if (!userScrolledLog) {
+            logBox.scrollTop = logBox.scrollHeight;
+          }
+        }
+        logOffset = d.offset || logOffset;
+      } catch (e) { /* ignore */ }
+    }
+
+    function renderTable(headers, rows, totalRows) {
+      if (!rows || !rows.length) {
+        return `<div class="empty">暂无数据（采集进行中或未到达该阶段）</div>`;
+      }
+      const show = headers.length ? headers : Object.keys(rows[0]);
+      const head = show.map(h => `<th>${escapeHtml(h)}</th>`).join("");
+      const body = rows.map(row => {
+        const cells = show.map(h => {
+          const v = row[h] || "";
+          const cls = v.length > 48 ? "truncate" : "";
+          return `<td class="${cls}" title="${escapeAttr(v)}">${escapeHtml(v)}</td>`;
+        }).join("");
+        return `<tr>${cells}</tr>`;
+      }).join("");
+      const more = totalRows > rows.length
+        ? `<div class="detail" style="margin-top:8px">显示前 ${rows.length} / ${totalRows} 行</div>`
+        : "";
+      return `<div class="table-wrap"><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>${more}`;
+    }
+
+    async function loadIntegrity() {
+      const [metaRes, hashRes, sumRes] = await Promise.all([
+        fetch("/api/meta"),
+        fetch("/api/hashes"),
+        fetch("/api/preview/summary"),
+      ]);
+      const meta = await metaRes.json();
+      const hashes = await hashRes.json();
+      const summary = await sumRes.json();
+
+      let html = "";
+      if (summary.meta_available && meta.available) {
+        const m = meta.data;
+        html += `<div class="detail" style="margin-bottom:12px">
+          <strong>meta.json</strong> · 状态 ${escapeHtml(m.status || "—")} ·
+          开始 ${escapeHtml(m.started_at || "—")} ·
+          结束 ${escapeHtml(m.finished_at || "—")}
+        </div>`;
+      } else {
+        html += `<div class="detail" style="margin-bottom:12px">meta.json 尚未生成（导出阶段完成后可用）</div>`;
+      }
+
+      html += `<div class="detail" style="margin-bottom:8px">文件行数：频道 ${summary.files?.account_mapping || 0} · 视频 ${summary.files?.video_list || 0} · 统计 ${summary.files?.video_analytics || 0}</div>`;
+
+      if (summary.analytics_status && Object.keys(summary.analytics_status).length) {
+        const parts = Object.entries(summary.analytics_status)
+          .map(([k, v]) => `${k}: ${v}`).join(" · ");
+        html += `<div class="detail" style="margin-bottom:12px">Analytics 状态：${escapeHtml(parts)}</div>`;
+      }
+
+      if (hashes.available && hashes.items.length) {
+        html += `<ul class="hash-list">` + hashes.items.map(it =>
+          `<li><strong>${escapeHtml(it.filename)}</strong><code>${escapeHtml(it.sha256)}</code></li>`
+        ).join("") + `</ul>`;
+      } else {
+        html += `<div class="empty">hashes.sha256 尚未生成</div>`;
+      }
+      return html;
+    }
+
+    async function loadPreview() {
+      const box = document.getElementById("preview-content");
+      if (activeTab === "integrity") {
+        box.innerHTML = `<div class="empty">加载中…</div>`;
+        box.innerHTML = await loadIntegrity();
+        return;
+      }
+      try {
+        const res = await fetch("/api/preview/" + activeTab + "?limit=30");
+        const d = await res.json();
+        box.innerHTML = renderTable(d.headers || [], d.rows || [], d.total_rows || 0);
+      } catch (e) {
+        box.innerHTML = `<div class="empty">加载失败</div>`;
+      }
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    }
+    function escapeAttr(s) {
+      return escapeHtml(s).replace(/"/g, "&quot;");
+    }
+
+    refreshStatus();
+    refreshLogs();
+    loadPreview();
+    setInterval(refreshStatus, 1000);
+    setInterval(refreshLogs, 1200);
+    setInterval(loadPreview, 2500);
+  </script>
+</body>
+</html>

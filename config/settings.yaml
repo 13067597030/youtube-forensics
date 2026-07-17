@@ -1,0 +1,37 @@
+data_dir: data
+time_sync_source: ntp  # ntp | http_date | none
+
+dashboard:
+  enabled: false   # 现场录屏时用命令行加 --dashboard
+  host: 127.0.0.1
+  port: 8787
+  open_browser: true   # 启动 Dashboard 后自动打开浏览器
+
+rate_limit:
+  min_interval_sec: 0.8
+  max_interval_sec: 2.5
+  max_retries: 5
+  backoff_base_sec: 2
+
+scrape:
+  incremental: true          # 视频列表与 Analytics 增量（跳过已采且有效的记录）
+  analytics_lifetime: true
+  enable_playwright_fallback: true   # 收入字段需浏览器内复现 Studio Analytics 请求
+
+# Cookie 策略：默认每次从本机 Chrome 实时读取（需先完全退出 Chrome）
+cookie:
+  prefer_browser: true       # 未指定 --cookie-file 时优先读浏览器
+  browser: chrome            # chrome | edge
+  file_fallback: true        # 浏览器读取失败时回退 data/cookies.txt
+  health_check: true         # 启动后检查 Studio 是否可访问
+  playwright_use_chrome_profile: true   # 使用 data/browser_profile 专用 Profile
+  playwright_browser: chrome
+  # Chrome v20 无法本地解密 Cookie 时，请先运行: python scripts/bootstrap_browser_profile.py
+
+preflight:
+  min_disk_free_mb: 100    # 低于此值拒绝启动
+  warn_disk_free_mb: 500   # 低于此值警告
+
+export:
+  evidence_dir: Evidence
+  csv_encoding: utf-8-sig
